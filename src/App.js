@@ -21,6 +21,7 @@ function App() {
     const [books, setBooks] = useState([]);
     const [page, setPage] = useState(1);
     const [view, setView] = useState('table');
+    const [hasMore, setHasMore] = useState(true);
 
     useEffect(() => {
         setPage(1);
@@ -40,11 +41,20 @@ function App() {
         }
     };
 
-    const fetchNext = () => {
-        const nextPage = page + 1;
+    const fetchNext = async () => {
+    const nextPage = page + 1;
+    const res = await axios.get(`${API_URL}/api/books`, {
+        params: { lang, seed, page: nextPage, likes, reviews }
+    });
+
+    if (res.data.length === 0) {
+        setHasMore(false);
+    } else {
+        setBooks(prev => [...prev, ...res.data]);
         setPage(nextPage);
-        fetchBooks(nextPage);
-    };
+    }
+};
+
 
     const exportCSV = () => {
         const csv = Papa.unparse(books);
@@ -79,11 +89,11 @@ function App() {
                     <Button variant="outlined" onClick={exportCSV}>Export CSV</Button>
                 </Stack>
                 <InfiniteScroll
-                    dataLength={books.length}
-                    next={fetchNext}
-                    hasMore={true}
-                    loader={<h4>Loading...</h4>}
-                >
+                dataLength={books.length}
+                next={fetchNext}
+                hasMore={hasMore}
+                loader={<h4>Loading...</h4>}
+                 >
                     {view === 'table' ? (
                         <BookTable books={books} />
                     ) : (

@@ -5,13 +5,15 @@ import BookTable from './components/BookTable';
 import BookCard from './components/BookCard';
 import Controls from './components/Controls';
 import Papa from 'papaparse';
-import { createTheme, ThemeProvider, CssBaseline, Container, Button, ButtonGroup, Stack } from '@mui/material';
+import { createTheme, ThemeProvider, CssBaseline, Container, Button, Stack } from '@mui/material';
 
 const darkTheme = createTheme({
     palette: {
         mode: 'dark',
     },
 });
+
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 function App() {
     const [lang, setLang] = useState('en');
@@ -21,7 +23,6 @@ function App() {
     const [books, setBooks] = useState([]);
     const [page, setPage] = useState(1);
     const [view, setView] = useState('table');
-    const [hasMore, setHasMore] = useState(true);
 
     useEffect(() => {
         setPage(1);
@@ -29,7 +30,6 @@ function App() {
     }, [lang, seed, likes, reviews]);
 
     const fetchBooks = async (pageNum, reset = false) => {
-        const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
         const res = await axios.get(`${API_URL}/api/books`, {
             params: { lang, seed, page: pageNum, likes, reviews }
         });
@@ -41,20 +41,11 @@ function App() {
         }
     };
 
-    const fetchNext = async () => {
-    const nextPage = page + 1;
-    const res = await axios.get(`${API_URL}/api/books`, {
-        params: { lang, seed, page: nextPage, likes, reviews }
-    });
-
-    if (res.data.length === 0) {
-        setHasMore(false);
-    } else {
-        setBooks(prev => [...prev, ...res.data]);
+    const fetchNext = () => {
+        const nextPage = page + 1;
         setPage(nextPage);
-    }
-};
-
+        fetchBooks(nextPage);
+    };
 
     const exportCSV = () => {
         const csv = Papa.unparse(books);
@@ -89,11 +80,11 @@ function App() {
                     <Button variant="outlined" onClick={exportCSV}>Export CSV</Button>
                 </Stack>
                 <InfiniteScroll
-                dataLength={books.length}
-                next={fetchNext}
-                hasMore={hasMore}
-                loader={<h4>Loading...</h4>}
-                 >
+                    dataLength={books.length}
+                    next={fetchNext}
+                    hasMore={true}
+                    loader={<h4>Loading...</h4>}
+                >
                     {view === 'table' ? (
                         <BookTable books={books} />
                     ) : (
